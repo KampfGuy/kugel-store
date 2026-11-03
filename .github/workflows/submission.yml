@@ -1,0 +1,62 @@
+# When someone publishes from Kompass, save their code into this repo (branch "submissions") so it never expires,
+# and reply on the issue. Uses only this repo's built-in GITHUB_TOKEN; Kompass itself has no token.
+name: Save submission
+on:
+  issues:
+    types: [opened, edited]
+permissions:
+  contents: write
+  issues: write
+jobs:
+  save:
+    if: startsWith(github.event.issue.title, '[Submit]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Extract code
+        id: x
+        env:
+          BODY: ${{ github.event.issue.body }}
+          NUM: ${{ github.event.issue.number }}
+        run: |
+          node - <<'JS'
+          const fs = require('fs'); const body = process.env.BODY || ''; const n = process.env.NUM;
+          const out = (k, v) => fs.appendFileSync(process.env.GITHUB_OUTPUT, k + '=' + v + '\n');
+          (async () => {
+            let code = '', src = '';
+            const m = body.match(/https:\/\/kugel-store\.kampfguy\.workers\.dev\/s\/([a-z0-9]{12})\.ks/);
+            if (m) {
+              const r = await fetch(m[0]); if (!r.ok) { out('status', 'Could not download ' + m[0] + ' (HTTP ' + r.status + ')'); return; }
+              code = await r.text(); src = m[0];
+              const want = (body.match(/sha256: ([0-9a-f]{64})/) || [])[1];
+              if (want) { const got = require('crypto').createHash('sha256').update(code).digest('hex'); if (got !== want) { out('status', 'sha256 mismatch for ' + m[0]); return; } }
+            } else {
+              const c = body.match(/```kampfscript\n([\s\S]*?)\n```/); if (c && !/copied to your clipboard/.test(c[1])) { code = c[1]; src = 'issue body'; }
+            }
+            if (!code.trim()) { out('status', 'No code found yet (paste it in the Code section, or publish again from Kompass).'); return; }
+            if (code.length > 2 * 1024 * 1024) { out('status', 'Code is bigger than 2 MB'); return; }
+            fs.mkdirSync('/tmp/sub', { recursive: true }); fs.writeFileSync('/tmp/sub/issue-' + n + '.ks', code);
+            out('file', 'issue-' + n + '.ks'); out('bytes', String(Buffer.byteLength(code))); out('src', src); out('status', 'ok');
+          })();
+          JS
+      - name: Commit to submissions branch
+        if: steps.x.outputs.status == 'ok'
+        run: |
+          git config user.name "kugel-store-bot"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin submissions || true
+          if git rev-parse --verify origin/submissions >/dev/null 2>&1; then git checkout -B submissions origin/submissions; else git checkout --orphan submissions; git rm -rfq .; fi
+          mkdir -p submissions && cp /tmp/sub/${{ steps.x.outputs.file }} submissions/
+          git add submissions && git commit -qm "Submission #${{ github.event.issue.number }}" && git push -q origin submissions || echo unchanged
+      - name: Reply
+        uses: actions/github-script@v7
+        env:
+          STATUS: ${{ steps.x.outputs.status }}
+          FILE: ${{ steps.x.outputs.file }}
+          BYTES: ${{ steps.x.outputs.bytes }}
+        with:
+          script: |
+            const ok = process.env.STATUS === 'ok';
+            const link = `https://github.com/${context.repo.owner}/${context.repo.repo}/blob/submissions/submissions/${process.env.FILE}`;
+            await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number,
+              body: ok ? `✅ Got it! Your code (${(+process.env.BYTES / 1024).toFixed(1)} KB) is saved: ${link}\nA maintainer will review it and add it to the Kugel Store.` : `⚠️ ${process.env.STATUS}` });
