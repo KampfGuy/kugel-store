@@ -12,7 +12,9 @@ Every program runs in Kompass's sandboxed KampfScript page runtime: it can only 
 1. In Kompass, open the **G builder** or the **⚡ editor** and press **🌍 Publish** (or go to `kompass://store/publish`).
 2. Fill in title, your name and a description, press **Publish**.
 3. Your browser opens a pre-filled issue here — sign in to GitHub (free) and press **Submit new issue**.
-   (Big programs: the code is already in your clipboard, paste it into the Code section.)
+   Big programs (up to 2 MB) are uploaded automatically by Kompass to the Kugel Store upload relay
+   (`kugel-store.kampfguy.workers.dev`, a free Cloudflare Worker, kept 90 days) and the issue just links to them.
+   When you submit, the **Save submission** GitHub Action copies the code into the `submissions` branch for good.
 4. After a review the maintainer adds it to `index.json` + `entries/`, and it appears in every Kompass.
 
 No token or password is ever needed in Kompass.
