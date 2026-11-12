@@ -2,7 +2,8 @@
 
 The store of KampfScript games & apps shown in [Kompass](https://github.com/KampfGuy/kompass) at `kompass://store`.
 
-- `index.json` — the catalog (id, title, author, description, tags, icon)
+- `index.json` — the catalog (id, title, author, description, tags, icon) shown by Kompass for Windows
+- `index-vr.json` — the **Kompass VR** catalog (Meta Quest app): only programs tagged `vr` (Kugel Tennis VR, Kugel Gorillas VR, Kugel Saber VR). The Windows app never reads it, and the VR app shows nothing else.
 - `entries/<id>.ks` — the code of each program
 
 Every program runs in Kompass's sandboxed KampfScript page runtime: it can only draw into its own page
