@@ -319,6 +319,18 @@
         "design",
         "vector"
       ]
+    },
+    {
+      "id": "company-forge",
+      "icon": "⚒️",
+      "title": "Company Forge",
+      "author": "KampfGuy",
+      "description": "Business tycoon: pick 1 of 33 industries, design products from 1,400+ parts in a creator that draws them live, research, expand to 19 countries, sign trade, export and store deals, win tenders. Career + Sandbox. Needs Kompass 1.7.0+.",
+      "tags": [
+        "game",
+        "tycoon",
+        "strategy"
+      ]
     }
   ]
 }
